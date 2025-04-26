@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# Environment variables
+.env
+
+# Docker related
+*.log
+
+# macOS
+.DS_Store
+
+# IDEs / Editors
+.vscode/
+.idea/
+
+# Pipenv
+Pipfile.lock
