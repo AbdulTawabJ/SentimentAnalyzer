@@ -18,13 +18,12 @@ A Sentiment Analysis Application built using Python and TextBlob, developed as p
 
 ```bash
 python src/app.py
-
+```
 ## 🐳 Dockerization
 
 We have containerized the CLI version of our Sentiment Analyzer app using Docker.
 
 ### How to Build and Run the Docker Container
-```
 
 ```bash
 # Build the Docker image
