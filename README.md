@@ -24,6 +24,7 @@ python src/app.py
 We have containerized the CLI version of our Sentiment Analyzer app using Docker.
 
 ### How to Build and Run the Docker Container
+```
 
 ```bash
 # Build the Docker image
@@ -31,4 +32,4 @@ docker build -t sentiment-analyzer .
 
 # Run the Docker container
 docker run -it sentiment-analyzer
-
+```
