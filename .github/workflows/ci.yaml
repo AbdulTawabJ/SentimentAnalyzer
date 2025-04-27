@@ -25,6 +25,11 @@ jobs:
       run: |
         pip install --no-cache-dir -r requirements.txt
 
+    - name: Run Tests
+      run: |
+        export PYTHONPATH=.
+        pytest tests/
+    
     - name: Run Application Check
       run: |
         python src/app.py <<< "This is a good day!"
