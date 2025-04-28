@@ -39,13 +39,13 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
 
     - name: Configure Docker to use Artifact Registry
-      run: gcloud auth configure-docker europe-west1-docker.pkg.dev
+      run: gcloud auth configure-docker asia-southeast2-docker.pkg.dev
 
     - name: Build and Push Docker Image to Artifact Registry
       env:
-        GCP_PROJECT_ID: your-gcp-project-id
-        GCP_REGION: europe-west1
-        IMAGE_NAME: my-sentiment-app
+        GCP_PROJECT_ID: sentimentanalyzer25
+        GCP_REGION: asia-southeast2
+        IMAGE_NAME: default
         IMAGE_FULL_PATH: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/default/${{ env.IMAGE_NAME }}
         IMAGE_TAG: ${{ github.sha }}
 
@@ -55,8 +55,8 @@ jobs:
 
     - name: Deploy to Cloud Run
       env:
-        GCP_PROJECT_ID: your-gcp-project-id
-        GCP_REGION: europe-west1
+        GCP_PROJECT_ID: sentimentanalyzer25
+        GCP_REGION: asia-southeast2
         SERVICE_NAME: sentiment-analyzer-service
         IMAGE_TO_DEPLOY: ${{ env.IMAGE_FULL_PATH }}:${{ env.IMAGE_TAG }}
 
