@@ -9,7 +9,6 @@ on:
       - main
 
 jobs:
-  # Step 1
   build-test-deploy:
     runs-on: ubuntu-latest
 
@@ -51,9 +50,7 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
 
       run: |
-        # Build the Docker image using the Dockerfile in your repo root
         docker build -t $IMAGE_FULL_PATH:$IMAGE_TAG .
-        # Push the tagged image to your Artifact Registry repository
         docker push $IMAGE_FULL_PATH:$IMAGE_TAG
 
     - name: Deploy to Cloud Run
