@@ -48,7 +48,8 @@ jobs:
 
         GCP_ARTIFACT_REGISTRY_REPO: default
         IMAGE_NAME: default
-        IMAGE_FULL_PATH: asia-southeast2-docker.pkg.dev/sentimentanalyzer25/default
+        # asia-southeast2-docker.pkg.dev/sentimentanalyzer25/default
+        IMAGE_FULL_PATH: asia-southeast2-docker.pkg.dev/sentimentanalyzer25/default/default
         IMAGE_TAG: ${{ github.sha }}
 
       run: |
