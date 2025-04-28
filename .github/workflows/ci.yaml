@@ -1,5 +1,10 @@
+# This workflow builds a Docker image of your Python application,
+# pushes it to Google Cloud Artifact Registry, and deploys it
+# to Google Cloud Run.
+
 name: CI/CD Pipeline to GCP Cloud Run
 
+# Configure the workflow to run on pushes and pull requests to the main branch
 on:
   push:
     branches:
@@ -10,22 +15,28 @@ on:
 
 jobs:
   build-test-deploy:
+    # Specify the runner environment
     runs-on: ubuntu-latest
-    # Define environment variables at the job level to be accessible by all steps
+
+    # Define environment variables at the job level.
+    # These variables are accessible to all steps within this job using $VAR_NAME in run commands.
     env:
-      # Your Google Cloud Project ID.
+      # Your Google Cloud Project ID. Replace with your actual Project ID.
       GCP_PROJECT_ID: sentimentanalyzer25
       # The region where your Artifact Registry repository is located and where you deploy Cloud Run.
+      # Ensure this matches the region you chose in GCP.
       GCP_REGION: asia-southeast2
-      # The name of your Docker repository in Google Cloud Artifact Registry.
-      # Based on your last file, you've set this to 'default'.
-      GCP_ARTIFACT_REGISTRY_REPO: default
+      # IMPORTANT: Replace 'your-artifact-registry-repo-name' below with the actual name
+      # of your Docker repository you created in Google Cloud Artifact Registry.
+      # This is the repository where your Docker images will be stored.
+      # You MUST create this repository in GCP before running the pipeline.
+      GCP_ARTIFACT_REGISTRY_REPO: your-artifact-registry-repo-name # <--- **REPLACE THIS PLACEHOLDER with your ACTUAL REPOSITORY NAME**
 
       # The desired name for your Docker image within the repository.
-      # Based on your last file, you've set this to 'new_image'.
-      IMAGE_NAME: new_image
+      # This is the base name of the image itself, within the repository.
+      IMAGE_NAME: new_image # You can change this name if you prefer
 
-      # Construct the full image path required by Artifact Registry:
+      # Construct the full image path required by Artifact Registry and Cloud Run:
       # [REGION]-docker.pkg.dev/[PROJECT-ID]/[REPOSITORY-NAME]/[IMAGE-NAME]
       # This path identifies the image location within the registry.
       IMAGE_FULL_PATH: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}
@@ -33,76 +44,88 @@ jobs:
 
     steps:
     - name: Checkout code
+      # Checks out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
       uses: actions/checkout@v4
 
     - name: Set up Python
+      # Sets up a Python environment.
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
     - name: Install dependencies
+      # Installs Python dependencies from requirements.txt.
       run: |
         pip install -r requirements.txt
 
     - name: Run automated tests
+      # Executes your application's tests using pytest.
       run: |
         export PYTHONPATH=.
         pytest tests/
 
     - name: Authenticate to Google Cloud
+      # Authenticates the workflow using the provided service account key.
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        credentials_json: ${{ secrets.GCP_SA_KEY }} # Ensure you have this secret configured in GitHub
 
     - name: Set up Google Cloud SDK
+      # Sets up the gcloud command-line tool.
       uses: google-github-actions/setup-gcloud@v2
 
     - name: Configure Docker to use Artifact Registry
-      # This command configures Docker to use gcloud as a credential helper for the specified region.
-      # Ensure this region matches your Artifact Registry repository region.
-      # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
-      run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+      # Configures Docker to use gcloud as a credential helper for the specified region.
+      # This allows Docker to authenticate with Artifact Registry.
+      # Accessing job-level env variables using $VAR_NAME in run commands.
+      run: gcloud auth configure-docker $GCP_REGION-docker.pkg.dev
 
     - name: Build and Push Docker Image to Artifact Registry
+      # Builds your Docker image and pushes it to Artifact Registry.
       env:
         # The tag for this specific image build (using the commit SHA for uniqueness).
         # This tag differentiates different versions of the same image name.
+        # Defined at step level as it uses a GitHub context variable.
         IMAGE_TAG: ${{ github.sha }}
 
       run: |
         # Print the values of the environment variables for debugging
-        # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
-        echo "GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}"
-        echo "GCP_REGION: ${{ env.GCP_REGION }}"
-        echo "GCP_ARTIFACT_REGISTRY_REPO: ${{ env.GCP_ARTIFACT_REGISTRY_REPO }}"
-        echo "IMAGE_NAME: ${{ env.IMAGE_NAME }}"
+        # Accessing job-level env variables using $VAR_NAME in run commands.
+        # Accessing step-level env variables using ${{ env.VAR_NAME }} in run commands.
+        echo "GCP_PROJECT_ID: $GCP_PROJECT_ID"
+        echo "GCP_REGION: $GCP_REGION"
+        echo "GCP_ARTIFACT_REGISTRY_REPO: $GCP_ARTIFACT_REGISTRY_REPO"
+        echo "IMAGE_NAME: $IMAGE_NAME"
         echo "IMAGE_TAG: ${{ env.IMAGE_TAG }}"
-        echo "Full image tag being used: ${{ env.IMAGE_FULL_PATH }}:${{ env.IMAGE_TAG }}"
+        echo "Full image tag being used: $IMAGE_FULL_PATH:${{ env.IMAGE_TAG }}"
 
         # Build the Docker image with the correct full tag (path + tag)
-        # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
-        docker build -t ${{ env.IMAGE_FULL_PATH }}:${{ env.IMAGE_TAG }} .
+        # Accessing job-level env variables using $VAR_NAME and step-level using ${{ env.VAR_NAME }}.
+        docker build -t $IMAGE_FULL_PATH:${{ env.IMAGE_TAG }} .
         # Push the tagged image to the Artifact Registry repository
-        # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
-        docker push ${{ env.IMAGE_FULL_PATH }}:${{ env.IMAGE_TAG }}
+        # Accessing job-level env variables using $VAR_NAME and step-level using ${{ env.VAR_NAME }}.
+        docker push $IMAGE_FULL_PATH:${{ env.IMAGE_TAG }}
 
     - name: Deploy to Cloud Run
+      # Deploys the newly built and pushed Docker image to Cloud Run.
       env:
         # The name of your Cloud Run service.
+        # This service will be created if it doesn't exist.
         SERVICE_NAME: sentiment-analyzer-service
         # The full image path and tag to deploy to Cloud Run.
         # This must match the tag used in the build/push step.
-        # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
-        IMAGE_TO_DEPLOY: ${{ env.IMAGE_FULL_PATH }}:${{ env.IMAGE_TAG }}
+        # IMAGE_TO_DEPLOY is defined here to ensure it has the correct tag from the previous step (github.sha).
+        # Accessing job-level env variables using ${{ env.VAR_NAME }} and GitHub context.
+        IMAGE_TO_DEPLOY: ${{ env.IMAGE_FULL_PATH }}:${{ github.sha }} # Using github.sha directly here for clarity and consistency
 
       run: |
         # Print the image path being used for deployment for debugging
-        # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
+        # Accessing step-level env variables using ${{ env.VAR_NAME }} in run commands.
         echo "Image being deployed to Cloud Run: ${{ env.IMAGE_TO_DEPLOY }}"
         # Deploy the image to Cloud Run
-        # Accessing job-level env variables using ${{ env.VAR_NAME }} in run commands.
+        # Accessing step-level env variables using ${{ env.VAR_NAME }} and job-level using $VAR_NAME.
         gcloud run deploy ${{ env.SERVICE_NAME }} \
           --image ${{ env.IMAGE_TO_DEPLOY }} \
-          --region ${{ env.GCP_REGION }} \
+          --region $GCP_REGION \
           --platform managed \
-          --allow-unauthenticated # Adjust permissions as needed
+          --allow-unauthenticated # Adjust permissions as needed based on your service requirements
