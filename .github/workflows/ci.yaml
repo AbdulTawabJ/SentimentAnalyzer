@@ -45,8 +45,10 @@ jobs:
       env:
         GCP_PROJECT_ID: sentimentanalyzer25
         GCP_REGION: asia-southeast2
+
+        GCP_ARTIFACT_REGISTRY_REPO: default
         IMAGE_NAME: default
-        IMAGE_FULL_PATH: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/default/${{ env.IMAGE_NAME }}
+        IMAGE_FULL_PATH: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }} # <--- This is the correct path format
         IMAGE_TAG: ${{ github.sha }}
 
       run: |
