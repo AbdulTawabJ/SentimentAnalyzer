@@ -1,35 +1,65 @@
-# .github/workflows/ci.yml
+# ... (previous steps for checkout, python setup, install deps, run tests) ...
 
-name: CI Pipeline
+# --- Start of GCP CD Steps ---
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+- name: Authenticate to Google Cloud
+  # This action uses the GCP_SA_KEY secret to log into GCP
+  uses: google-github-actions/auth@v2
+  with:
+    credentials_json: ${{ secrets.GCP_SA_KEY }}
+    # Optional: specify project ID if not included in the key
+    # project_id: your-gcp-project-id
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+- name: Set up Google Cloud SDK
+  # This action installs and configures the gcloud CLI in the runner
+  uses: google-github-actions/setup-gcloud@v2
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+- name: Configure Docker to use Artifact Registry
+  # Configure Docker to authenticate pulls/pushes to your Artifact Registry
+  # Replace 'europe-west1' with your chosen Artifact Registry region
+  run: gcloud auth configure-docker europe-west1-docker.pkg.dev
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+- name: Build and Push Docker Image to Artifact Registry
+  env:
+    # Define environment variables for clarity and reuse
+    GCP_PROJECT_ID: your-gcp-project-id # REPLACE with your GCP Project ID
+    GCP_REGION: europe-west1 # REPLACE with your GCP region (must match Artifact Registry)
+    IMAGE_NAME: my-sentiment-app # REPLACE with your image name
+    # Construct the full image path including registry, project, repo, and name
+    # 'default' is the repository name created in Artifact Registry in Phase 1
+    IMAGE_FULL_PATH: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/default/${{ env.IMAGE_NAME }}
+    # Choose a tag - ${{ github.sha }} is the unique commit hash
+    IMAGE_TAG: ${{ github.sha }} # Using commit SHA as tag
+    # IMAGE_TAG: latest # Or use 'latest' if you prefer, but less precise
 
-    - name: Install dependencies
-      run: |
-        pip install --no-cache-dir -r requirements.txt
+  run: |
+    # Build the Docker image with the full Artifact Registry tag
+    docker build -t $IMAGE_FULL_PATH:$IMAGE_TAG .
+    # Push the tagged image to Artifact Registry
+    docker push $IMAGE_FULL_PATH:$IMAGE_TAG
 
-    - name: Run Tests
-      run: |
-        export PYTHONPATH=.
-        pytest tests/
-    
-    - name: Run Application Check
-      run: |
-        python src/app.py <<< "This is a good day!"
+- name: Deploy to Cloud Run
+  env:
+    # Define environment variables for clarity and reuse
+    GCP_PROJECT_ID: your-gcp-project-id # REPLACE with your GCP Project ID
+    GCP_REGION: europe-west1 # REPLACE with your GCP region (must match Cloud Run service region)
+    SERVICE_NAME: sentiment-analyzer-service # REPLACE with your desired Cloud Run service name
+    # Use the full image path with the tag you pushed
+    IMAGE_TO_DEPLOY: ${{ env.IMAGE_FULL_PATH }}:${{ env.IMAGE_TAG }}
+
+  run: |
+    # Deploy the image to Cloud Run
+    # --image specifies the container image from Artifact Registry
+    # --platform managed uses the serverless Cloud Run
+    # --region specifies the deployment region
+    # --allow-unauthenticated makes the service public (use --no-allow-unauthenticated to require auth)
+    gcloud run deploy ${{ env.SERVICE_NAME }} \
+      --image ${{ env.IMAGE_TO_DEPLOY }} \
+      --region ${{ env.GCP_REGION }} \
+      --platform managed \
+      --allow-unauthenticated
+      # Add other configurations if needed, e.g., --memory, --cpu, --set-env-vars=VAR1=value1
+
+# --- End of GCP CD Steps ---
+
+# ... (rest of your job or other jobs) ...
