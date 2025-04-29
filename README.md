@@ -20,6 +20,7 @@ This web application provides a user-friendly interface to:
 ## Live Demo
 
 You can access the deployed application here:
+
 [https://sentiment-analyzer-service-492944601563.asia-southeast2.run.app/](https://sentiment-analyzer-service-492944601563.asia-southeast2.run.app/)
 
 ## Presentation and Report
