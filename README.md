@@ -20,8 +20,15 @@ This web application provides a user-friendly interface to:
 ## Live Demo
 
 You can access the deployed application here:
-[https://sentiment-analyzer-service-xxxxxxxxxx-as.a.run.app]([https://sentiment-analyzer-service-xxxxxxxxxx-as.a.run.app](https://sentiment-analyzer-service-492944601563.asia-southeast2.run.app))
-*(Replace with your actual Cloud Run Service URL)*
+
+[https://sentiment-analyzer-service-492944601563.asia-southeast2.run.app/](https://sentiment-analyzer-service-492944601563.asia-southeast2.run.app/)
+
+## Presentation and Report
+You can view the presentation here:
+https://www.canva.com/design/DAGmA30k_-w/VUXrQtxcvBSUu-cE5MVdVA/view?utm_content=DAGmA30k_-w&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h7e0e7e9326
+
+You can view the report here:
+https://docs.google.com/document/d/1RkmH9smANickX7Idti6UH-eTA8clzFwdUcdIdv0r0iI/edit?usp=sharing
 
 ## Technology Stack
 
